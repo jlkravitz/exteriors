@@ -111,7 +111,7 @@ make_data <- function(survey_path) {
       pre_q = pre_q_processed,
       post_q = post_q_processed
     ) %>%
-    write_rds(path_ext_set(path_file(survey_path), "rds"))
+    write_rds(path("surveys-processed", path_file(survey_path), ext = "rds"))
 }
 
 # Given a path to a survey's data directory, returns a dataframe with all
@@ -153,6 +153,6 @@ args <- commandArgs(trailingOnly = TRUE)
 if (length(args) > 0) {
   make_data(args[1])
 } else {
-  dir_ls(path = "surveys") %>%
+  dir_ls(path = "surveys-raw") %>%
     walk(make_data)
 }
