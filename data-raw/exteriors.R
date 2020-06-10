@@ -27,8 +27,8 @@ recoded_qualtric_arms <- list(
 
 # MTurk survey codes that were from "accepted" HITs but that we don't want
 # to include in any analyses. The most common use for this list is for HITs
-# that were automatically accepted (e.g., because we were too slow to reject
-# them).
+# that were automatically accepted by the Mechanical Turk system (e.g., because
+# we were too slow to reject them).
 mturk_code_blacklist <- c(
   "2756254845",
   "2083738408",
@@ -49,89 +49,94 @@ mturk_code_blacklist <- c(
 )
 
 make_data <- function(survey_path) {
-  data_file <- dir_ls(survey_path, regexp = "*.csv")[1]  # Assumes only 1
+  file_in <- dir_ls(survey_path, regexp = "*.csv")[1]  # Assumes only 1
+  file_out <- path("surveys-processed", path_file(survey_path), ext = "rds")
 
-  message(data_file)
+  message(str_glue("Processing {file_in}"))
 
-  # There are 3 messy lines at the start, so we read the columns in separately. This makes
-  # it easier to get correct typing in the columns, without needing to specify types manually.
+  # The input file begins with 3 messy lines, so we read the column names
+  # separately and skip these lines when reading in the full data set (see below).
   col_names <-
-    data_file %>%
-    read_csv(n_max = 0) %>%
+    file_in %>%
+    read_csv(
+      col_types = cols(.default = col_character()),
+      n_max = 0
+    ) %>%
     names()
 
-  # We only know which arm of the study a participant is sent to based on the timing data
-  # available. We use this to simplify the dataframe.
-  data_file %>%
+  file_in %>%
     read_csv(
-      skip = 3,
       col_names = col_names,
-      col_types = cols(
-        MTurkCode = col_character()
-      )
+      col_types = cols(MTurkCode = col_character()),
+      skip = 3,
     ) %>%
-    # Exactly one arm will have click data for each observation. Adding `na.rm`
-    # filters out the click data of the other arms.
-    # gather(
-    #   key = "timer_name",
-    #   value = "timer_time",
-    #   matches("^prompt.*First Click$"),
-    #   na.rm = TRUE
-    # ) %>%
+
+# Determine treatment -----------------------------------------------------
+    # For each observation, exactly one arm will have click data. This is how we
+    # determine the treatment for a particular observation.
     pivot_longer(
-      matches("^prompt.*First Click$"),
-      names_to = "timer_name",
-      values_to = "timer_time",
+      matches("^prompt.*First Click"),
+      names_to = "arm",
+      names_pattern = "prompt_(.+)_t.*_First Click",
+      values_to = "arm_timer_time",
       values_drop_na = TRUE
     ) %>%
     mutate(
       arm =
-        timer_name %>%
-        str_match("prompt_(.+)_t(imer)?_First Click") %>%
-        .[,2] %>%
+        arm %>%
         recode(!!!recoded_qualtric_arms) %>%
         factor(levels = arm_levels)
     ) %>%
+
+# Filter responses --------------------------------------------------------
     semi_join(
       accepted_mturk_codes(survey_path),
       by = "MTurkCode"
     ) %>%
     filter(!MTurkCode %in% mturk_code_blacklist) %>%
-    rename(pre_q = main_pre_prompt_q) %>%
-    mutate_at(
-      vars(pre_q, post_q),
-      list(processed = process_text)
-    ) %>%
-    # For backwards compatibility, `pre_q` and `post_q` need to be the processed
-    # responses.
-    select(
+
+# Select and process variables --------------------------------------------
+    transmute(
       arm,
-      pre_q_original = pre_q,
-      post_q_original = post_q,
-      pre_q = pre_q_processed,
-      post_q = post_q_processed
+      pre_q = main_pre_prompt_q,
+      post_q,
+      housing_involved = Q30,
+      housing_purchased = baseline_learning
     ) %>%
-    write_rds(path("surveys-processed", path_file(survey_path), ext = "rds"))
+    mutate(
+      across(starts_with("housing"), compose(as_factor, str_to_lower)),
+      across(c(pre_q, post_q), process_text)
+    ) %>%
+
+    write_rds(file_out)
+
+  message(str_glue("Writing {file_out}"))
+  message()
 }
 
 # Given a path to a survey's data directory, returns a dataframe with all
 # survey codes associated with accepted MTurk HITS.
 accepted_mturk_codes <- function(survey_path) {
   read_batch_file <- function(batch_file) {
+    # We read in columns separately because two empty "Approve" and "Reject"
+    # columns at the end of the dataframe create parsing problems.
     col_names <-
       batch_file %>%
-      read_csv(n_max = 0) %>%
+      read_csv(
+        col_types = cols(.default = col_character()),
+        n_max = 0
+      ) %>%
       names() %>%
       head(-2)
 
     batch_file %>%
       read_csv(
-        skip = 1,
         col_names = col_names,
         col_types = cols_only(
           ApprovalTime = col_character(),
           Answer.surveycode = col_character()
-        )
+        ),
+        skip = 1
       ) %>%
       filter(!is.na(ApprovalTime)) %>%
       transmute(MTurkCode = Answer.surveycode)
@@ -142,6 +147,7 @@ accepted_mturk_codes <- function(survey_path) {
     map_dfr(read_batch_file)
 }
 
+# Simple text pre-processing function.
 process_text <- compose(
   str_squish,
   textstem::lemmatize_strings,
