@@ -41,7 +41,7 @@ make_study_data <- function(files_in, file_out = NULL, N_max = Inf) {
     if (!is.null(file_out)) {
       file_out
     } else {
-      str_glue("study_data_", N, ".rds")
+      str_glue("study-data/study_data_", N, ".rds")
     }
 
   # Sample `N` observations from each arm and write out the file!
