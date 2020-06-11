@@ -2,8 +2,9 @@
 
 'Processes and tidies exterior survey data, individually for each survey.
 
-Assumes script is being run from `data-raw` directory and that
-`data-raw/surveys-raw` contains unprocessed survey data, organized as follows:
+Assumes script is being run from `data-raw` directory, that
+`data-raw/surveys-processed` exists, and that `data-raw/surveys-raw` contains
+unprocessed survey data, organized as follows:
 
   surveys-raw
   ├── original
