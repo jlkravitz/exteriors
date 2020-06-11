@@ -3,15 +3,15 @@
 \docType{data}
 \name{exteriors_study_small}
 \alias{exteriors_study_small}
-\title{Exteriors survey responses for 125 individuals, including all treatment arms.}
+\title{125 exteriors survey responses, all treatment arms.}
 \format{
 A data frame with 125 rows and 5 variables:
 \describe{
-  \item{arm}{treatment arm, as factor}
-  \item{pre_q}{pre-intervention response, lower-cased and lemmatized}
-  \item{post_q}{post-intervention response, lower-cased and lemmatized}
-  \item{housing_involved}{indicates whether respondent is involved in housing sales and development, as logical}
-  \item{housing_purchased}{indicates whether respondent has tried to purchase a house in past ten years, as logical}
+\item{arm}{treatment arm, as factor}
+\item{pre_q}{pre-intervention response, lower-cased and lemmatized}
+\item{post_q}{post-intervention response, lower-cased and lemmatized}
+\item{housing_involved}{indicates whether respondent is involved in housing sales and development, as logical}
+\item{housing_purchased}{indicates whether respondent has tried to purchase a house in past ten years, as logical}
 }
 }
 \usage{
@@ -21,10 +21,12 @@ exteriors_study_small
 A dataset containing exteriors survey responses of 125 individuals, with
 25 responses per treatment arm. This dataset contains responses for the
 following treatment arms:
-    * strong architecture
-    * weak architecture
-    * graphical architecture
-    * curb appeal
-    * control
+\itemize{
+\item strong architecture
+\item weak architecture
+\item graphical architecture
+\item curb appeal
+\item control
+}
 }
 \keyword{datasets}
