@@ -90,6 +90,8 @@ mturk_code_blacklist <- c(
 
 make_data <- function(survey_path) {
   file_in <- dir_ls(survey_path, regexp = "*.csv")[1]  # Assumes only 1
+
+  # This script modifies column types, which RDS preserves (as opposed to CSV).
   file_out <- path("surveys-processed", path_file(survey_path), ext = "rds")
 
   message(str_glue("Processing {file_in}"))
