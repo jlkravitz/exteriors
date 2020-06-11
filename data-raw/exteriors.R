@@ -189,13 +189,16 @@ process_text <- compose(
   str_to_lower
 )
 
-# If no survey name provided, tidy all survey data.
-args <- docopt(doc)
-surveys_in <-
-  if (length(args$input) > 0) {
-  path("surveys-raw", args$input)
-  } else {
-    dir_ls(path = "surveys-raw")
-  }
-surveys_in %>%
-  walk(make_data)
+# Only runs if executed as script.
+if (sys.nframe() == 0) {
+  # If no survey name provided, tidy all survey data.
+  args <- docopt(doc)
+  surveys_in <-
+    if (length(args$input) > 0) {
+      path("surveys-raw", args$input)
+    } else {
+      dir_ls(path = "surveys-raw")
+    }
+  surveys_in %>%
+    walk(make_data)
+}

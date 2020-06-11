@@ -13,50 +13,58 @@ Usage:
 Options:
   -h --help                 Show this screen.
   -N <val>, --N=<val>       Maximum number of observations to include per arm  [default: Inf].
-  -o <file> --output=<file> Output file
+  <input>                   Survey directory.
+  -o <file> --output=<file> Output file.
 
 ' -> doc
 
-library(docopt)
 library(fs)
 library(tidyverse)
 
 set.seed(156)
 
-args <- docopt(doc)
-N_max <- as.numeric(args$N)
+make_study_data <- function(files_in, file_out = NULL, N_max = Inf) {
+  df_all <-
+    files_in %>%
+    map_dfr(read_rds)
 
-files_in <-
-  if (length(args$input) > 0) {
-    path("surveys-processed", args$input, ext = "rds")
-  } else {
-    dir_ls(path = "surveys-processed")
-  }
+  # Compute how many observations we want per arm: the smallest number of
+  # observations in any arm or `N_max`, whichever is smaller.
+  N <-
+    df_all %>%
+    count(arm) %>%
+    pull(n) %>%
+    min()
+  N <- min(N, N_max)
 
-df_all <-
-  files_in %>%
-  map_dfr(read_rds)
+  file_out <-
+    if (!is.null(file_out)) {
+      file_out
+    } else {
+      str_glue("study_data_", N, ".rds")
+    }
 
-# Compute how many observations we want per arm: the smallest number of
-# observations in any arm or `N_max`, whichever is smaller.
-N <-
-  df_all %>%
-  count(arm) %>%
-  pull(n) %>%
-  min()
-N <- min(N, N_max)
+  # Sample `N` observations from each arm and write out the file!
+  df_study <-
+    df_all %>%
+    group_by(arm) %>%
+    sample_n(N) %>%
+    ungroup() %>%
+    write_rds(file_out)
+}
 
-file_out <-
-  if (!is.null(args$output)) {
-    args$output
-  } else {
-    str_glue("study_data_", N, ".rds")
-  }
+# Only runs if executed as script.
+if (sys.nframe() == 0L) {
+  library(docopt)
+  args <- docopt(doc)
+  N_max <- as.numeric(args$N)
 
-# Sample `N` observations from each arm and write out the file!
-df_study <-
-  df_all %>%
-  group_by(arm) %>%
-  sample_n(N) %>%
-  ungroup() %>%
-  write_rds(file_out)
+  files_in <-
+    if (length(args$input) > 0) {
+      path("surveys-processed", args$input, ext = "rds")
+    } else {
+      dir_ls(path = "surveys-processed")
+    }
+
+  make_study_data(files_in, args$output, N_max = N_max)
+}
