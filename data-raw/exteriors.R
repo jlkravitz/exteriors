@@ -25,6 +25,10 @@ The Qualtrics response file can be downloaded with the default settings (CSV,
 The MTurk batch files can be downloaded by clicking "Download CSV" on the
 "Results" page for a particular batch.
 
+Make sure to update top-level parameters in this script (`arm_levels`,
+`recoded_qualtric_arms`, and `mturk_code_blacklist`) before running. Open
+the script and directly edit the variables as necessary.
+
 Usage:
   exteriors.R [<input>...]
   exteriors.R (-h | --help)
