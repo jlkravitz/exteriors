@@ -1,7 +1,42 @@
 #!/usr/bin/env Rscript
 
+'Processes and tidies exterior survey data, individually for each survey.
+
+Assumes script is being run from `data-raw` directory and that
+`data-raw/surveys-raw` contains unprocessed survey data, organized as follows:
+
+  surveys-raw
+  ├── original
+  │   ├── Exteriors\ Survey_April\ 25,\ 2019_17.21.csv
+  │   └── mturk_batch_files
+  │       ├── Batch_3058260_batch_results.csv
+  │       └── Batch_3060313_batch_results.csv
+  └── <human_readable_survey_name>
+      ├── <Qualtrics response file>
+      └── mturk_batch_files
+          ├── <MTurk batch file #1>
+          ├── <MTurk batch file #2>
+          └── ...
+
+The Qualtrics response file can be downloaded with the default settings (CSV,
+"Download all fields", "Use choice text").
+
+The MTurk batch files can be downloaded by clicking "Download CSV" on the
+"Results" page for a particular batch.
+
+Usage:
+  exteriors.R [<input>...]
+  exteriors.R (-h | --help)
+
+Options:
+  -h --help       Show this screen.
+  <input>         Survey directory.
+
+' -> doc
+
 library(tidyverse)
 library(fs)
+library(docopt)
 
   # Parameters
 # Factor levels for study arms. We use this to ensure that arms have the
@@ -155,10 +190,12 @@ process_text <- compose(
 )
 
 # If no survey name provided, tidy all survey data.
-args <- commandArgs(trailingOnly = TRUE)
-if (length(args) > 0) {
-  make_data(args[1])
-} else {
-  dir_ls(path = "surveys-raw") %>%
-    walk(make_data)
-}
+args <- docopt(doc)
+surveys_in <-
+  if (length(args$input) > 0) {
+  path("surveys-raw", args$input)
+  } else {
+    dir_ls(path = "surveys-raw")
+  }
+surveys_in %>%
+  walk(make_data)
